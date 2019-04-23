@@ -7,18 +7,20 @@
 
 /* HEADERS */
 #include <stdint.h>
+#include <signal.h>
+#include <unistd.h>
 
 
 /* DEFINES AND TYPEDEFS */
-#define SERVO_SEM "servo"
+
 
 /* GLOBALS */
 
 
 /* FUNCTION DECLARATIONS */
-void servo_plan(void);
+void* servo_plan(void* args);
 
-void servo_execute(void);
+void* servo_execute(void* args);
 
 
 #endif // SERVO_H

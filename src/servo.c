@@ -6,8 +6,14 @@
 /* HEADER */
 #include "servo.h"
 
+#define DEBUG 1
+#include "debug.h"
 
 /* DEFINES AND TYPEDEFS */
+#define PERIOD				20		// period in ms
+#define NSEC_PER_MSEC		1000000
+#define NSEC_PER_SEC		1000000000
+
 #define IMAGE_WIDTH			960		// image width in pixels
 #define CENTERING_TOLERANCE	20		// ± around center of image that's considered "centered"
 #define SLOPE_TOLERANCE		500		// Slope deviation allowed before turning
@@ -56,41 +62,64 @@ line_point_slope_t find_centerline(line_xy_t line_0, line_xy_t line_1);
 
 
 /* FUNCTION DEFINITIONS */
-void servo_planner(void)
+void* servo_plan(void* args)
 {
-	// Need to add something here about how the data gets into the service
-	// Message queue or something?
+	// Get timing set up
+	struct timespec time;
+	clock_gettime(CLOCK_MONOTONIC, &time);
+	time.tv_sec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC))/NSEC_PER_SEC;
+	time.tv_nsec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC)) % NSEC_PER_SEC;
 
-	// assume I know have these from image service
-	line_xy_t line_0;
-	line_xy_t line_1;
+	while(1)
+	{
+		// Sleep to achieve the set period	
+		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, NULL);
 
-	// Get the centerline
-	line_point_slope_t centerline = find_centerline(line_0, line_1);
+		debug_print_time();
+		debug_print(" - servo_planner start\n");
 
-	// Determine what to do
-	if((centerline.p.x > CENTERED_RIGHT_THRESH) || (centerline.p.x < CENTERED_LEFT_THRESH))
-	{
-		// We're not centered between the lines
-		// Drive forward
+		// Need to add something here about how the data gets into the service
+		// Message queue or something?
+
+		// assume I know have these from image service
+		line_xy_t line_0 = {{5,2}, {200,800}};
+		line_xy_t line_1 = {{1200,150},{1600,900}};
+
+		// Get the centerline
+		line_point_slope_t centerline = find_centerline(line_0, line_1);
+		debug_print("Centerline slope %d, point (%d, %d)\n", centerline.m, centerline.p.x, centerline.p.y);
+
+		// Determine what to do
+		if((centerline.p.x > CENTERED_RIGHT_THRESH) || (centerline.p.x < CENTERED_LEFT_THRESH))
+		{
+			debug_print("Not Centered, go fwd\n");
+			// We're not centered between the lines
+			// Drive forward
+		}
+		else if(centerline.m > SLOPE_POS_THRESH)
+		{
+			debug_print("Turn Right\n");
+			// We're centered, but not going straight between the lines
+			// Turn right proportional to the slope
+		}
+		else if(centerline.m < SLOPE_NEG_THRESH)
+		{
+			debug_print("Turn Left\n");
+			// We're centered, but not going straight between the lines
+			// Turn left proportional to the slope
+		}
+		else
+		{
+			debug_print("Centered and straight, go fwd\n");
+			// We're centered and going straight
+			// go forwards
+		}
+
+		debug_print_time();
+		debug_print(" - servo planner end\n");
+		time.tv_sec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC))/NSEC_PER_SEC;
+		time.tv_nsec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC)) % NSEC_PER_SEC;
 	}
-	else if(centerline.m > SLOPE_POS_THRESH)
-	{
-		// We're centered, but not going straight between the lines
-		// Turn right proportional to the slope
-	}
-	else if(centerline.m < SLOPE_NEG_THRESH)
-	{
-		// We're centered, but not going straight between the lines
-		// Turn left proportional to the slope
-	}
-	else
-	{
-		// We're centered and going straight
-		// go forwards
-	}
-	
-	
 }
 
 
