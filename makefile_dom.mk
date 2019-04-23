@@ -27,6 +27,6 @@ $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
 clean:
-		rm -rf build
+		rm -rf build bin
 
 .PHONY: clean
