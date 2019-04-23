@@ -7,7 +7,7 @@ BIN_NAME = drive_buggy
 CC=g++
 CDEFS=
 CFLAGS= -O0 -g -Wall $(CDEFS)
-LIB_DIRS = -L/usr/lib
+LIB_DIRS = -L/usr/local/lib
 LIBS= -lrt -pthread
 CPPLIBS= -lopencv_core -lopencv_flann -lopencv_video
 
@@ -18,6 +18,12 @@ $(BUILD_DIR)/%.o : $(SRC_DIR)/%.c $(INCLUDE_DIR)/%.h | $(BUILD_DIR) $(BIN_DIR)
 	$(CC) -I $(INCLUDE_DIR) -c $< -o $@ $(CFLAGS) $(LIB_DIRS) $(LIBS) $(CPPLIBS)
 
 $(BUILD_DIR)/%.o : $(SRC_DIR)/%.c | $(BUILD_DIR) $(BIN_DIR)
+	$(CC) -I $(INCLUDE_DIR) -c $< -o $@ $(CFLAGS) $(LIB_DIRS) $(LIBS) $(CPPLIBS)
+
+$(BUILD_DIR)/%.o : $(SRC_DIR)/%.cpp $(INCLUDE_DIR)/%.hpp | $(BUILD_DIR) $(BIN_DIR)
+	$(CC) -I $(INCLUDE_DIR) -c $< -o $@ $(CFLAGS) $(LIB_DIRS) $(LIBS) $(CPPLIBS)
+
+$(BUILD_DIR)/%.o : $(SRC_DIR)/%.cpp | $(BUILD_DIR) $(BIN_DIR)
 	$(CC) -I $(INCLUDE_DIR) -c $< -o $@ $(CFLAGS) $(LIB_DIRS) $(LIBS) $(CPPLIBS)
 
 $(BUILD_DIR):
