@@ -14,7 +14,7 @@
 #include <signal.h>
 
 #include "servo.h"
-
+#include "cam_cv.hpp"
 
 #define DEBUG 1
 #include "debug.h"
@@ -31,10 +31,11 @@ typedef struct {
 	struct sched_param sched_param;
 }pthread_container_t;
 
-#define NUM_THREADS 1
-#define NSEC_PER_MSEC 1000000000
+#define NUM_THREADS 3
 
 /* GLOBALS */
+
+sem_t cv_sem;	// to restrict camera access between the lines and circles services
 
 
 /* FUNCTION DEFINITIONS */
@@ -45,6 +46,9 @@ int main(void)
 	struct sched_param main_param = {.sched_priority = sched_get_priority_max(SCHED_FIFO)};
 	pthread_setschedparam(pthread_self(), SCHED_FIFO, &main_param);
 
+	// init the mutex
+	sem_init(&cv_sem, 0, 0);
+
 	// Thread Stuff
 	pthread_container_t threads[NUM_THREADS] = {0};
 
@@ -52,6 +56,13 @@ int main(void)
 	// Servo Planning Thread
 	threads[0].function = servo_plan;
 	threads[0].sched_param.sched_priority = 95;
+
+	// setting the CV functions to be same priority as servo task
+	threads[1].function = cam_lines;
+	threads[1].sched_param.sched_priority = 95;
+
+	threads[2].function = cam_circles;
+	threads[2].sched_param.sched_priority = 95;
 
 	// Set up default attributes for all threads
 	for(uint_fast8_t i = 0; i < NUM_THREADS; i++)
