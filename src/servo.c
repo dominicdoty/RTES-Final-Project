@@ -6,13 +6,11 @@
 /* HEADER */
 #include "servo.h"
 
-#define DEBUG 1
+//#define DEBUG 1
 #include "debug.h"
 
 /* DEFINES AND TYPEDEFS */
 #define PERIOD				20		// period in ms
-#define NSEC_PER_MSEC		1000000
-#define NSEC_PER_SEC		1000000000
 
 #define IMAGE_WIDTH			960		// image width in pixels
 #define CENTERING_TOLERANCE	20		// ± around center of image that's considered "centered"
