@@ -98,25 +98,20 @@ void* cam_lines(void* args)
 			debug_print("Line[%d]: Point 2. x=%d y=%d\n", i, l[2], l[3]);
 		}
 		
-		debug_print_time();
-		debug_print(" - cam_lines end\n");
 
-		// post the cv-function related mutex, should be immediately taken by cv_circles()
-		//sem_post(&cv_sem);
-
-		time.tv_sec += (time.tv_nsec + (PERIOD * NSEC_PER_MSEC))/NSEC_PER_SEC;
-		time.tv_nsec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC)) % NSEC_PER_SEC;
-
-
+		// write the line data and count of line to the shared buffers
 		if(buffer_Val == 0)
 		{
 			for(size_t j = 0; j < lines.size(); j++)
 			{
 				Vec4i line = lines[j];
-				buffer0[4*j] = line[0];
-				buffer0[4*j+1] = line[1];
-				buffer0[4*j+2] = line[2];
+				
+				buffer0[0] = (int)lines.size();
+
+				buffer0[4*j+1] = line[0];
+				buffer0[4*j+2] = line[1];
 				buffer0[4*j+3] = line[2];
+				buffer0[4*j+4] = line[2];
 			}
 
 			pthread_mutex_unlock(&mutex0);
@@ -127,15 +122,23 @@ void* cam_lines(void* args)
 			for(size_t k = 0; k < lines.size(); k++)
 			{
 				Vec4i line = lines[k];
-				buffer1[4*k] = line[0];
-				buffer1[4*k+1] = line[1];
-				buffer1[4*k+2] = line[2];
-				buffer1[4*k+3] = line[3];		
+				buffer1[0] = (int)lines.size();
+
+				buffer1[4*k+1] = line[0];
+				buffer1[4*k+2] = line[1];
+				buffer1[4*k+3] = line[2];
+				buffer1[4*k+4] = line[3];		
 			}
 
 			pthread_mutex_unlock(&mutex1);
 			buffer_Val = 0;		
 		}
+
+		time.tv_sec += (time.tv_nsec + (PERIOD * NSEC_PER_MSEC))/NSEC_PER_SEC;
+		time.tv_nsec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC)) % NSEC_PER_SEC;
+
+		debug_print_time();
+		debug_print(" - cam_lines end\n");
 	}
 	return 0;
 }
