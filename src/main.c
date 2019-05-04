@@ -60,13 +60,13 @@ int main(void)
 	pthread_container_t threads[NUM_THREADS] = {0};
 
 	// Set thread functions, arguments (default to null), and priorities here.
-	// Servo Planning Thread
-	threads[0].function = servo_plan;
-	threads[0].sched_param.sched_priority = 95;
-
 	// setting the CV functions to be same priority as servo task
-	threads[1].function = cam_lines;
-	threads[1].sched_param.sched_priority = 95;
+	threads[0].function = cam_lines;
+	threads[0].sched_param.sched_priority = 95;
+	
+	// Servo Planning Thread
+	threads[1].function = servo_plan;
+	threads[1].sched_param.sched_priority = 94;
 
 	//threads[2].function = cam_circles;
 	//threads[2].sched_param.sched_priority = 95;

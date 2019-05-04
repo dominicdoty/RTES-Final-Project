@@ -42,6 +42,8 @@ void* cam_lines(void* args)
 
 	while(1)
 	{
+		debug_print("@ start of cam bufferVal %d\n", buffer_Val);
+
 		if(buffer_Val == 0)
 			pthread_mutex_lock(&mutex0);
 		else if(buffer_Val == 1)
@@ -82,7 +84,7 @@ void* cam_lines(void* args)
 
 		GaussianBlur(cropped_HSV, canny_frame, Size(7,7), 1.5, 1.5);
 		Canny(canny_frame, canny_frame, CANNY_LOW_THRESH, CANNY_HIGH_THRESH, 3);
-		HoughLinesP(canny_frame, lines, 3, 3*CV_PI/180, 50, 125, 50);	
+		HoughLinesP(canny_frame, lines, 1, CV_PI/180, 50, 50, 10);	
 	
 		debug_print("lines.size: %d\n", lines.size());
 
@@ -98,12 +100,12 @@ void* cam_lines(void* args)
 		// write the line data and count of line to the shared buffers
 		if(buffer_Val == 0)
 		{
+			buffer0[0] = (int)lines.size();
+
 			for(size_t j = 0; j < lines.size(); j++)
 			{
 				Vec4i line = lines[j];
 				
-				buffer0[0] = (int)lines.size();
-
 				buffer0[4*j+1] = line[0];
 				buffer0[4*j+2] = line[1];
 				buffer0[4*j+3] = line[2];
@@ -115,10 +117,11 @@ void* cam_lines(void* args)
 		}
 		else if(buffer_Val == 1)
 		{
+			buffer1[0] = (int)lines.size();
+			
 			for(size_t k = 0; k < lines.size(); k++)
 			{
 				Vec4i line = lines[k];
-				buffer1[0] = (int)lines.size();
 
 				buffer1[4*k+1] = line[0];
 				buffer1[4*k+2] = line[1];

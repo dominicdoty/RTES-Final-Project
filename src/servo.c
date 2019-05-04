@@ -24,7 +24,7 @@
 
 // Servo Speeds
 #define SERVO_ZERO				1500
-#define SERVO_STANDARD_SPEED	100
+#define SERVO_STANDARD_SPEED	25
 
 // Servo Direction Modifiers
 #define SERVO_L_FW	(1)
@@ -60,7 +60,7 @@ void servo_command(uint_fast16_t steering_input);
 /* FUNCTION DEFINITIONS */
 void* servo_plan(void* args)
 {
-	int buffer_Val = 1;
+	int buffer_Val = 0;
 
 	// Init GPIO
 	gpioInitialise();
@@ -73,6 +73,8 @@ void* servo_plan(void* args)
 
 	while(1)
 	{
+		debug_print("@ start of servo bufferVal %d\n", buffer_Val);
+
 		// Take the Mutex for one of the buffers
 		if(buffer_Val == 0)
 		{
@@ -90,72 +92,90 @@ void* servo_plan(void* args)
 
 
 		// Get array of lines, number of lines
-		uint32_t num_lines = buffer_Val ? buffer0[0] : buffer1[0];
-		line_xy_t* lines = buffer_Val ? (line_xy_t*)&buffer0[1] : (line_xy_t*)&buffer1[1];
+		uint32_t num_lines = buffer_Val ? buffer1[0] : buffer0[0];
+		debug_print("servo got %d lines from buffer %d\n", num_lines, buffer_Val);
+		line_xy_t* lines = buffer_Val ? (line_xy_t*)&buffer1[1] : (line_xy_t*)&buffer0[1];
 
 
-		// These store an accumulating average of slopes
-		float average_slope_pos;
-		int32_t average_intercept_pos;
-		float average_slope_neg;
-		int32_t average_intercept_neg;
-
-		uint_fast8_t num_lines_pos = 0;
-		uint_fast8_t num_lines_neg = 0;
-		
-		// Loop through finding all the line equations and average them in two groups, neg or pos slope
-		for(uint_fast8_t i = 0; i < num_lines; i++)
+		if(num_lines)
 		{
-			line_slope_int_t line = find_line_equation(lines[i]);
+			// These store an accumulating average of slopes
+			float average_slope_pos;
+			int32_t average_intercept_pos;
+			float average_slope_neg;
+			int32_t average_intercept_neg;
 
-			if(line.m >= 0)
+			uint_fast8_t num_lines_pos = 0;
+			uint_fast8_t num_lines_neg = 0;
+			
+			// Loop through finding all the line equations and average them in two groups, neg or pos slope
+			for(uint_fast8_t i = 0; i < num_lines; i++)
 			{
-				average_slope_pos += line.m;
-				average_intercept_pos += line.b;
-				num_lines_pos++;
+				line_slope_int_t line = find_line_equation(lines[i]);
+
+				if(line.m >= 0)
+				{
+					average_slope_pos += line.m;
+					average_intercept_pos += line.b;
+					num_lines_pos++;
+				}
+				else
+				{
+					average_slope_neg += line.m;
+					average_intercept_neg += line.b;
+					num_lines_neg++;
+				}
+
+				// debug_print("Line %d Slope %f Int %d | avg_slope_pos %f, avg_int_pos %d | avg_slope_neg %f, avg_int_neg %d\n",
+							// i,
+							// line.m,
+							// line.b,
+							// average_slope_pos,
+							// average_intercept_pos,
+							// average_slope_neg,
+							// average_intercept_neg);
+			}
+
+			// Divide out the accumulated line equations to get avg
+			if(num_lines_pos && num_lines_neg) // only do if we have at least one of each line
+			{
+				line_slope_int_t pos_line;
+				pos_line.m = average_slope_pos / num_lines_pos;
+				pos_line.b = average_intercept_pos / num_lines_pos;
+				debug_print("pos line slope %f int %d\n", pos_line.m, pos_line.b);
+
+				line_slope_int_t neg_line;
+				neg_line.m = average_slope_neg / num_lines_neg;
+				neg_line.b = average_intercept_neg / num_lines_neg;
+				debug_print("neg line slope %f int %d\n", neg_line.m, neg_line.b);
+
+				// Get the centerline
+				centerline = find_centerline(pos_line, neg_line);
+				debug_print("Centerline slope %f, point (%d, %d)\n", centerline.m, centerline.p.x, centerline.p.y);
+
+				// PID Calculate
+				float command = pid_calculate(5, 2, 1, 0, centerline.m);
+				debug_print("PID output %f\n", command);
+
+				// Servo Output
+				servo_command((uint_fast16_t)command);
 			}
 			else
 			{
-				average_slope_neg += line.m;
-				average_intercept_neg += line.b;
-				num_lines_neg++;
+				// Servo Output turn in place
+				servo_command(SERVO_STANDARD_SPEED);
 			}
-
-			debug_print("Line %d Slope %f Int %d | avg_slope_pos %f, avg_int_pos %d | avg_slope_neg %f, avg_int_neg %d\n",
-						i,
-						line.m,
-						line.b,
-						average_slope_pos,
-						average_intercept_pos,
-						average_slope_neg,
-						average_intercept_neg);
 		}
-
-		// Divide out the accumulated line equations to get avg
-		line_slope_int_t pos_line;
-		pos_line.m = average_slope_pos / num_lines_pos;
-		pos_line.b = average_intercept_pos / num_lines_pos;
-		debug_print("pos line slope %f int %d\n", pos_line.m, pos_line.b);
-
-		line_slope_int_t neg_line;
-		neg_line.m = average_slope_neg / num_lines_neg;
-		neg_line.b = average_intercept_neg / num_lines_neg;
-		debug_print("neg line slope %f int %d\n", neg_line.m, neg_line.b);
-
-		// Get the centerline
-		centerline = find_centerline(pos_line, neg_line);
-		debug_print("Centerline slope %f, point (%d, %d)\n", centerline.m, centerline.p.x, centerline.p.y);
-
-		// PID Calculate
-		float command = pid_calculate(5, 2, 1, 0, centerline.m);
-		debug_print("PID output %f\n", command);
-
-		// Servo Output
-		servo_command((uint_fast16_t)command);
+		else
+		{
+			// Servo Output turn in place
+			servo_command(SERVO_STANDARD_SPEED);
+		}
 
 		// Update Time
 		debug_print_time();
 		debug_print(" - servo planner end\n");
+
 		time.tv_sec += (time.tv_nsec + (PERIOD * NSEC_PER_MSEC))/NSEC_PER_SEC;
 		time.tv_nsec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC)) % NSEC_PER_SEC;
 	
