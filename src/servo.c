@@ -6,6 +6,7 @@
 /* HEADER */
 #include "servo.h"
 #include "data.h"
+#include <syslog.h>
 
 //#define DEBUG 1
 #include "debug.h"
@@ -13,6 +14,7 @@
 /* DEFINES AND TYPEDEFS */
 #define NSEC_PER_MSEC 	(1000000)
 #define NSEC_PER_SEC	(1000000000)
+#define NSEC_PER_USEC	(100)
 
 #define PERIOD				50		// period in ms
 #define IMAGE_WIDTH			960		// image width in pixels
@@ -24,7 +26,7 @@
 
 // Servo Speeds
 #define SERVO_ZERO				1500
-#define SERVO_STANDARD_SPEED	25
+#define SERVO_STANDARD_SPEED	50
 
 // Servo Direction Modifiers
 #define SERVO_L_FW	(1)
@@ -71,8 +73,13 @@ void* servo_plan(void* args)
 	time.tv_sec += (time.tv_nsec + (PERIOD * NSEC_PER_MSEC))/NSEC_PER_SEC;
 	time.tv_nsec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC)) % NSEC_PER_SEC;
 
+	int iterCnt = 0;
+
 	while(1)
 	{
+		//clock_gettime(CLOCK_MONOTONIC, &time);
+		//syslog(LOG_CRIT, "ITER %d: servo start time @ sec=%d, msec=%d\n", iterCnt, (int)time.tv_sec, (int)time.tv_nsec/NSEC_PER_MSEC); 
+
 		debug_print("@ start of servo bufferVal %d\n", buffer_Val);
 
 		// Take the Mutex for one of the buffers
@@ -90,6 +97,9 @@ void* servo_plan(void* args)
 		debug_print_time();
 		debug_print(" - servo_planner start\n");
 
+
+		clock_gettime(CLOCK_MONOTONIC, &time);
+		syslog(LOG_CRIT, "ITER %d: servo start time @ sec=%d, usec=%d\n", iterCnt, (int)time.tv_sec, (int)time.tv_nsec/NSEC_PER_USEC);
 
 		// Get array of lines, number of lines
 		uint32_t num_lines = buffer_Val ? buffer1[0] : buffer0[0];
@@ -154,7 +164,7 @@ void* servo_plan(void* args)
 				debug_print("Centerline slope %f, point (%d, %d)\n", centerline.m, centerline.p.x, centerline.p.y);
 
 				// PID Calculate
-				float command = pid_calculate(5, 2, 1, 0, centerline.m);
+				float command = pid_calculate(2, 1, 0, 0, centerline.m);
 				debug_print("PID output %f\n", command);
 
 				// Servo Output
@@ -189,6 +199,10 @@ void* servo_plan(void* args)
 			pthread_mutex_unlock(&mutex1);
 			buffer_Val = 0;
 		}
+
+		clock_gettime(CLOCK_MONOTONIC, &time);
+		syslog(LOG_CRIT, "ITER %d: servo end time @ sec=%d, usec=%d\n", iterCnt, (int)time.tv_sec, (int)time.tv_nsec/NSEC_PER_USEC);
+		iterCnt++;
 	}
 }
 
