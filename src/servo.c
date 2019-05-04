@@ -5,7 +5,6 @@
 
 /* HEADER */
 #include "servo.h"
-
 #include "data.h"
 
 //#define DEBUG 1
@@ -66,15 +65,6 @@ void* servo_plan(void* args)
 	// Init GPIO
 	gpioInitialise();
 
-
-	// Set up Double Buffers
-
-	int *buffer0;
-	int *buffer1;
-
-	pthread_mutex_t mutex0;
-	pthread_mutex_t mutex1;
-
 	// Get timing set up
 	struct timespec time;
 	clock_gettime(CLOCK_MONOTONIC, &time);
@@ -83,28 +73,26 @@ void* servo_plan(void* args)
 
 	while(1)
 	{
+		// Take the Mutex for one of the buffers
 		if(buffer_Val == 0)
+		{
 			pthread_mutex_lock(&mutex0);
+		}
 		else if(buffer_Val == 1)
+		{
 			pthread_mutex_lock(&mutex1);
+		}
 
 		// Sleep to achieve the set period	
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, NULL);
 		debug_print_time();
 		debug_print(" - servo_planner start\n");
 
-		// Need to add something here about how the data gets into the service
-		// Message queue or something?
+
 		// Get array of lines, number of lines
-		uint8_t num_lines = 6;
-		line_xy_t lines[6] = {
-			{{40,118},{183,2}},
-			{{498,1},{637,54}},
-			{{459,21},{627,118}},
-			{{3,67},{131,2}},
-			{{435,6},{627,117}},
-			{{40,119},{183,3}},
-		};
+		uint32_t num_lines = buffer_Val ? buffer0[0] : buffer1[0];
+		line_xy_t* lines = buffer_Val ? (line_xy_t*)&buffer0[1] : (line_xy_t*)&buffer1[1];
+
 
 		// These store an accumulating average of slopes
 		float average_slope_pos;
