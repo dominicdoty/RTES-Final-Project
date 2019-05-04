@@ -19,6 +19,8 @@
 #define DEBUG 1
 #include "debug.h"
 
+#include "data.h"
+
 /* DEFINES AND TYPEDEFS */
 typedef void*(*pthread_routine_t)(void*);
 typedef void* pthread_argument_t;
@@ -33,25 +35,34 @@ typedef struct {
 
 #define NUM_THREADS 2
 
+
 /* GLOBALS */
 
-//cv::VideoCapture cap;
-sem_t cv_sem;	// to restrict camera access between the lines and circles services
+//extern int *buffer0;
+//extern int *buffer1;
 
-
-
+//extern pthread_mutex_t mutex0;
+//extern pthread_mutex_t mutex1;
 
 
 /* FUNCTION DEFINITIONS */
 
 int main(void)
 {
+	int* buffer0 = new int[40];
+	int* buffer1 = new int[40];
+	pthread_mutex_t mutex0;
+	pthread_mutex_t mutex1;
+
+	pthread_mutex_init(&mutex0, NULL);
+	pthread_mutex_init(&mutex1, NULL);
+
 	// Elevate the Main Thread
 	struct sched_param main_param = {.sched_priority = sched_get_priority_max(SCHED_FIFO)};
 	pthread_setschedparam(pthread_self(), SCHED_FIFO, &main_param);
 
 	// init the mutex
-	sem_init(&cv_sem, 0, 0);
+	//sem_init(&cv_sem, 0, 0);
 
 	// Thread Stuff
 	pthread_container_t threads[NUM_THREADS] = {0};
@@ -92,4 +103,6 @@ int main(void)
 	{
 		pause();
 	}
+
+
 }
