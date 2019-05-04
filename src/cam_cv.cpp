@@ -54,15 +54,11 @@ void* cam_lines(void* args)
 		debug_print_time();
 		debug_print(" - cam_lines start\n");
 	
-		// wait until the mutex is released by 
-		//sem_wait(&cv_sem);
-
 		 if ( !cap.isOpened() )  // if not success, exit program
 		 {
 			cout << "Failed to open the web cam in cam_lins()" << endl;
 			lines.clear();
 			break;
-			//return lines;
 	         }
 
 
@@ -95,7 +91,12 @@ void* cam_lines(void* args)
 			debug_print("Line[%d], Point 1. x=%d y=%d\n", i, l[0], l[1]);
 			debug_print("Line[%d]: Point 2. x=%d y=%d\n", i, l[2], l[3]);
 		}
-		
+	
+//		imwrite("thresh_HSV.jpg", threshold_HSV);
+//		imwrite("lines.jpg", canny_frame);
+//		imwrite("cropped_HSV.jpg", cropped_HSV);	
+
+//		return 0;
 
 		// write the line data and count of line to the shared buffers
 		if(buffer_Val == 0)
