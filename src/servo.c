@@ -6,6 +6,8 @@
 /* HEADER */
 #include "servo.h"
 
+#include "data.h"
+
 //#define DEBUG 1
 #include "debug.h"
 
@@ -43,6 +45,7 @@ line_slope_int_t find_line_equation(line_xy_t line);
 // Find the centerline of two lines
 line_point_slope_t find_centerline(line_slope_int_t line_0, line_slope_int_t line_1);
 
+
 // Perform PID control with given parameters
 float pid_calculate(uint_fast8_t Kp,
 							uint_fast8_t Ki,
@@ -58,12 +61,19 @@ void servo_command(uint_fast16_t steering_input);
 /* FUNCTION DEFINITIONS */
 void* servo_plan(void* args)
 {
+	int buffer_Val = 1;
+
 	// Init GPIO
 	gpioInitialise();
 
 
 	// Set up Double Buffers
 
+	int *buffer0;
+	int *buffer1;
+
+	pthread_mutex_t mutex0;
+	pthread_mutex_t mutex1;
 
 	// Get timing set up
 	struct timespec time;
@@ -73,6 +83,11 @@ void* servo_plan(void* args)
 
 	while(1)
 	{
+		if(buffer_Val == 0)
+			pthread_mutex_lock(&mutex0);
+		else if(buffer_Val == 1)
+			pthread_mutex_lock(&mutex1);
+
 		// Sleep to achieve the set period	
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, NULL);
 		debug_print_time();
@@ -155,6 +170,17 @@ void* servo_plan(void* args)
 		debug_print(" - servo planner end\n");
 		time.tv_sec += (time.tv_nsec + (PERIOD * NSEC_PER_MSEC))/NSEC_PER_SEC;
 		time.tv_nsec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC)) % NSEC_PER_SEC;
+	
+		if(buffer_Val == 0)
+		{
+			pthread_mutex_unlock(&mutex0);
+			buffer_Val = 1;
+		}
+		else if(buffer_Val == 1)
+		{
+			pthread_mutex_unlock(&mutex1);
+			buffer_Val = 0;
+		}
 	}
 }
 
