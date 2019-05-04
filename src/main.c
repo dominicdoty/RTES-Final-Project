@@ -37,23 +37,15 @@ typedef struct {
 
 
 /* GLOBALS */
-
-//extern int *buffer0;
-//extern int *buffer1;
-
-//extern pthread_mutex_t mutex0;
-//extern pthread_mutex_t mutex1;
-
+int* buffer0 = new int[40];
+int* buffer1 = new int[40];
+pthread_mutex_t mutex0;
+pthread_mutex_t mutex1;
 
 /* FUNCTION DEFINITIONS */
 
 int main(void)
 {
-	int* buffer0 = new int[40];
-	int* buffer1 = new int[40];
-	pthread_mutex_t mutex0;
-	pthread_mutex_t mutex1;
-
 	pthread_mutex_init(&mutex0, NULL);
 	pthread_mutex_init(&mutex1, NULL);
 
