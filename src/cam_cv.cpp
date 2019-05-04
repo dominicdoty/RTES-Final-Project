@@ -2,9 +2,13 @@
 // ECEN 5623
 
 #include "cam_cv.hpp"
-
 #include "debug.h"
+#include "data.h"
+
+
 #define DEBUG 1
+
+
 
 #define PERIOD (50)
 
@@ -14,33 +18,42 @@ using namespace std;
 
 //cv::VideoCapture cap;
 
-extern sem_t cv_sem;
+//extern sem_t cv_sem;
 /// how to get the vector out of the thread?
 
 void* cam_lines(void* args)
 {
+	int buffer_Val  = 0;
+
+	// setting up timing for 50[ms] period
 	struct timespec time;
 	clock_gettime(CLOCK_MONOTONIC, &time);
-
 	debug_print("initial time in cam: %ld.%ld\n", time.tv_sec, time.tv_nsec);
-
 	time.tv_sec += (time.tv_nsec + (PERIOD*NSEC_PER_MSEC))/NSEC_PER_SEC;
 	time.tv_nsec = (time.tv_nsec + (PERIOD*NSEC_PER_MSEC)) % NSEC_PER_SEC;
-
 	debug_print("new time in cam: %ld.%ld\n", time.tv_sec, time.tv_nsec);
-
 	debug_print("entered cam_lines\n");
-//	cv::VideoCapture cap;
-	// give the mutex once here so that cam_lines runs first
-//	sem_post(&cv_sem);
 	
 	vector<Vec4i> lines;
 	Mat frame, canny_frame, line_gray, line_HSV, threshold_HSV, cropped_HSV;
 
+	// initialize the camera
 	cv::VideoCapture cap(0); 	// capture the video from camera
+
+	// set up the double buffer
+
+	int *buffer0;
+	int *buffer1;
+	pthread_mutex_t mutex0;
+	pthread_mutex_t mutex1;
 
 	while(1)
 	{
+		if(buffer_Val == 0)
+			pthread_mutex_lock(&mutex0);
+		else if(buffer_Val == 1)
+			pthread_mutex_lock(&mutex1);
+
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, NULL);
 
 		debug_print_time();
@@ -89,7 +102,7 @@ void* cam_lines(void* args)
 		}
 		
 		debug_print_time();
-		debug_print(" - cam_lines end, giving up semaphore\n");
+		debug_print(" - cam_lines end\n");
 
 		// post the cv-function related mutex, should be immediately taken by cv_circles()
 		//sem_post(&cv_sem);
@@ -97,7 +110,35 @@ void* cam_lines(void* args)
 		time.tv_sec += (time.tv_nsec + (PERIOD * NSEC_PER_MSEC))/NSEC_PER_SEC;
 		time.tv_nsec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC)) % NSEC_PER_SEC;
 
-		//return lines;
+
+		if(buffer_Val == 0)
+		{
+			for(size_t j = 0; j < lines.size(); j++)
+			{
+				Vec4i line = lines[j];
+				buffer0[4*j] = line[0];
+				buffer0[4*j+1] = line[1];
+				buffer0[4*j+2] = line[2];
+				buffer0[4*j+3] = line[2];
+			}
+
+			pthread_mutex_unlock(&mutex0);
+			buffer_Val = 1;
+		}
+		else if(buffer_Val == 1)
+		{
+			for(size_t k = 0; k < lines.size(); k++)
+			{
+				Vec4i line = lines[k];
+				buffer1[4*k] = line[0];
+				buffer1[4*k+1] = line[1];
+				buffer1[4*k+2] = line[2];
+				buffer1[4*k+3] = line[3];		
+			}
+
+			pthread_mutex_unlock(&mutex1);
+			buffer_Val = 0;		
+		}
 	}
 	return 0;
 }
