@@ -16,10 +16,7 @@
 using namespace cv;
 using namespace std;
 
-//cv::VideoCapture cap;
 
-//extern sem_t cv_sem;
-/// how to get the vector out of the thread?
 
 void* cam_lines(void* args)
 {
