@@ -39,10 +39,6 @@ void* cam_lines(void* args)
 
 	// set up the double buffer
 
-	int *buffer0;
-	int *buffer1;
-	pthread_mutex_t mutex0;
-	pthread_mutex_t mutex1;
 
 	while(1)
 	{
