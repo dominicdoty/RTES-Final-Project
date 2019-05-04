@@ -30,37 +30,10 @@
 #define SERVO_R_FW	(SERVO_L_FW * (-1))
 
 
-// Point type
-// Sized to hold up to a 3280x2464 (max RasPiCam resolution)
-typedef struct
-{
-	uint32_t x;
-	uint32_t y;
-}point_t;
-
-// Line type - (0,0) is bottom left corner of image
-typedef struct
-{
-	point_t p0;
-	point_t p1;
-}line_xy_t;
-
-// Line in Slope Intercept (y = mx + b)
-typedef struct
-{
-	float m;
-	int_fast32_t b;
-}line_slope_int_t;
-
-// Line in Point Slope ((y-y1) = m(x-x1))
-typedef struct
-{
-	float m;
-	point_t p;
-}line_point_slope_t;
-
-
 /* GLOBALS */
+line_point_slope_t centerline;
+uint_fast16_t speed_left_servo;
+uint_fast16_t speed_right_servo;
 
 
 /* STATIC FUNCTION DECLARATIONS */
@@ -167,7 +140,7 @@ void* servo_plan(void* args)
 		debug_print("neg line slope %f int %d\n", neg_line.m, neg_line.b);
 
 		// Get the centerline
-		line_point_slope_t centerline = find_centerline(pos_line, neg_line);
+		centerline = find_centerline(pos_line, neg_line);
 		debug_print("Centerline slope %f, point (%d, %d)\n", centerline.m, centerline.p.x, centerline.p.y);
 
 		// PID Calculate
@@ -253,8 +226,8 @@ void servo_command(uint_fast16_t steering_input)
 	}
 
 	// Calculate the servo outputs to achieve the differential steering required
-	uint_fast16_t speed_left_servo = SERVO_ZERO + SERVO_L_FW*(SERVO_STANDARD_SPEED + steering_input);
-	uint_fast16_t speed_right_servo = SERVO_ZERO + SERVO_R_FW*(SERVO_STANDARD_SPEED - steering_input);
+	speed_left_servo = SERVO_ZERO + SERVO_L_FW*(SERVO_STANDARD_SPEED + steering_input);
+	speed_right_servo = SERVO_ZERO + SERVO_R_FW*(SERVO_STANDARD_SPEED - steering_input);
 
 	// Output the values
 	gpioServo(SERVO_L, speed_left_servo);
