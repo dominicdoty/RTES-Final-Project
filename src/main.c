@@ -37,8 +37,8 @@ typedef struct {
 
 
 /* GLOBALS */
-int* buffer0 = new int[40];
-int* buffer1 = new int[40];
+int* buffer0 = new int[41];
+int* buffer1 = new int[41];
 pthread_mutex_t mutex0;
 pthread_mutex_t mutex1;
 
