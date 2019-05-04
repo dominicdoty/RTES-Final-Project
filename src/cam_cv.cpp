@@ -6,63 +6,109 @@
 #include "debug.h"
 #define DEBUG 1
 
-extern sem_t cv_sem;
+#define PERIOD (50)
+
 
 using namespace cv;
 using namespace std;
+
+//cv::VideoCapture cap;
+
+extern sem_t cv_sem;
 /// how to get the vector out of the thread?
 
 void* cam_lines(void* args)
 {
+	struct timespec time;
+	clock_gettime(CLOCK_MONOTONIC, &time);
+
+	debug_print("initial time in cam: %ld.%ld\n", time.tv_sec, time.tv_nsec);
+
+	time.tv_sec += (time.tv_nsec + (PERIOD*NSEC_PER_MSEC))/NSEC_PER_SEC;
+	time.tv_nsec = (time.tv_nsec + (PERIOD*NSEC_PER_MSEC)) % NSEC_PER_SEC;
+
+	debug_print("new time in cam: %ld.%ld\n", time.tv_sec, time.tv_nsec);
+
+	debug_print("entered cam_lines\n");
+//	cv::VideoCapture cap;
 	// give the mutex once here so that cam_lines runs first
-	sem_wait(&cv_sem);
+//	sem_post(&cv_sem);
 	
 	vector<Vec4i> lines;
-	Mat frame, canny_frame, line_gray;
+	Mat frame, canny_frame, line_gray, line_HSV, threshold_HSV, cropped_HSV;
+
+	cv::VideoCapture cap(0); 	// capture the video from camera
 
 	while(1)
 	{
-		// wait until the mutex is released by 
-		sem_wait(&cv_sem);
+		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, NULL);
 
-		VideoCapture cap(0); //capture the video from webcam
+		debug_print_time();
+		debug_print(" - cam_lines start\n");
 	
+		// wait until the mutex is released by 
+		//sem_wait(&cv_sem);
+
 		 if ( !cap.isOpened() )  // if not success, exit program
 		 {
 			cout << "Failed to open the web cam in cam_lins()" << endl;
 			lines.clear();
-			return lines;
+			break;
+			//return lines;
 	         }
-	
-		cap >> frame;
+
+
+		bool success = cap.grab();
+		cap.retrieve(frame);
+
+		if(!success)
+			debug_print("failed to grab frame\n");
+
 		flip(frame, frame, 0);
 		Mat mat_lines(frame);
 	
-		cvtColor(mat_lines, line_gray, COLOR_BGR2GRAY);
-		GaussianBlur(line_gray, canny_frame, Size(7,7), 1.5, 1.5);
+		cvtColor(mat_lines, line_HSV, COLOR_BGR2HSV);
+		inRange(line_HSV, Scalar(LOW_H, LOW_S, LOW_V), Scalar(HIGH_H, HIGH_S, HIGH_V), threshold_HSV);
+
+		Mat image_roi(threshold_HSV, Rect(START_X, START_Y, WIDTH_X, HEIGHT_Y));
+
+		image_roi.copyTo(cropped_HSV);
+
+		GaussianBlur(cropped_HSV, canny_frame, Size(7,7), 1.5, 1.5);
 		Canny(canny_frame, canny_frame, CANNY_LOW_THRESH, CANNY_HIGH_THRESH, 3);
-		HoughLinesP(canny_frame, lines, 1, CV_PI/180, 50, 50, 10);	
+		HoughLinesP(canny_frame, lines, 3, 3*CV_PI/180, 50, 125, 50);	
 	
-		cout << "lines.size" << lines.size() << endl;	
-	
+		debug_print("lines.size: %d\n", lines.size());
+
 		for(size_t i = 0; i < lines.size(); i++)
 		{
 			Vec4i l = lines[i];
 			line(mat_lines, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 3, CV_AA);
+			debug_print("Line[%d], Point 1. x=%d y=%d\n", i, l[0], l[1]);
+			debug_print("Line[%d]: Point 2. x=%d y=%d\n", i, l[2], l[3]);
 		}
-	
-	//	imwrite("edges.jpg", canny_frame);
-	//	imwrite("lines.jpg", mat_lines);
-	
-		// post the cv-function related mutex, should be immediately taken by cv_circles()
-		sem_post(&cv_sem);
+		
+		debug_print_time();
+		debug_print(" - cam_lines end, giving up semaphore\n");
 
-		return lines;
+		// post the cv-function related mutex, should be immediately taken by cv_circles()
+		//sem_post(&cv_sem);
+
+		time.tv_sec += (time.tv_nsec + (PERIOD * NSEC_PER_MSEC))/NSEC_PER_SEC;
+		time.tv_nsec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC)) % NSEC_PER_SEC;
+
+		//return lines;
 	}
+	return 0;
 }
 
+
+
+/*
 void* cam_circles(void *args)
 {
+	debug_print("entered cam_circles\n");
+
 	vector<Vec3f> circles;
 	Mat frame, circle_gray;
 
@@ -71,13 +117,18 @@ void* cam_circles(void *args)
 	{
 		sem_wait(&cv_sem);
 
+		debug_print_time();
+		debug_print(" - cam_circles got semaphore\n");
+
 		VideoCapture cap(0);
 	
 		if( !cap.isOpened())
 		{
 			cout << "Failed to open the camera in cam_circles" << endl;	
 			circles.clear();
-			return circles;
+			break;
+			//return -1;
+			//return circles;
 		}	
 	
 		cap >> frame;
@@ -101,9 +152,14 @@ void* cam_circles(void *args)
 	
 	//	imwrite("circles.jpg", mat_circles);
 	
+		debug_print_time();
+		debug_print(" - cam_circles end, giving up semaphore\n");
+
 		// give up the cv-function related mutex (should be immediately taken by cam_lines()
 		sem_post(&cv_sem);
-	        
-		return circles;
+	       
+		//return circles;
 	}
+	return 0;
 }
+*/
