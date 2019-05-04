@@ -1,34 +1,40 @@
 
 #include "servo.h"
+#include "monitoring.h"
+#include "debug.h"
 #include <stdio.h>
+#include <syslog.h>
 
 #define DATA_POINTS (100)
-
-void IntToAscii(uint_fast16_t n);
+#define PERIOD	10
 
 #define MAX_CHARS_PER_LINE (5 + 1 + 5 + 1 + 10 + 1)
 unsigned char fileData[DATA_POINTS * MAX_CHARS_PER_LINE];
-unsigned char* fileDataPtr; = &fileData[0];
+unsigned char* fileDataPtr = &fileData[0];
 
 void* monitor(void* args)
 {
-  // Init GPIO (probably already called by servo service)
-  // gpioInitialise();
-	
-	// gpioSetMode(5, PI_OUTPUT); // Set pin 5 (reset) as an output
-	// gpioWrite(5, 1); // force high to prevent reset 
+	// Get timing set up
+	struct timespec time;
+	struct timespec time_ex;
+	clock_gettime(CLOCK_MONOTONIC, &time);
+	time.tv_sec += (time.tv_nsec + (PERIOD * NSEC_PER_MSEC))/NSEC_PER_SEC;
+	time.tv_nsec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC)) % NSEC_PER_SEC;
 	
 	FILE* file = fopen("Monitor.txt", "wb");
 	if(file == NULL)
 	{
 		debug_print("Error Creating File\n");
-    return -1;
+		return (void*)(-1);
 	}
 
 	fileDataPtr = &fileData[0];
 	
-	for(int i = 0; i < DATA_POINTS; i+=1)
+	for(int i = 0; i < DATA_POINTS; i++)
 	{
+//		clock_gettime(CLOCK_MONOTONIC, &time_ex);
+//		syslog(LOG_CRIT, "monitor start time @ sec=%d.%9d\n", (int)(time_ex.tv_sec), (int)(time_ex.tv_nsec)); 
+
 		IntToAscii(speed_right_servo);
 		
 		*fileDataPtr = ' ';
@@ -37,7 +43,7 @@ void* monitor(void* args)
 		IntToAscii(speed_left_servo);
 		
 		*fileDataPtr = ' ';
-		fileDataPtr++
+		fileDataPtr++;
 		
 		IntToAscii(centerline.p.x);
 		
@@ -46,6 +52,13 @@ void* monitor(void* args)
 		
 		// centerline.m // slope
 		// to be added if there is time
+
+//		clock_gettime(CLOCK_MONOTONIC, &time_ex);
+//		syslog(LOG_CRIT, "monitor end time @ sec=%d.%9d\n", (int)time_ex.tv_sec, (int)time_ex.tv_nsec);
+
+
+		time.tv_sec += (time.tv_nsec + (PERIOD * NSEC_PER_MSEC))/NSEC_PER_SEC;
+		time.tv_nsec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC)) % NSEC_PER_SEC;
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, NULL);
 	}
 	
@@ -57,11 +70,14 @@ void* monitor(void* args)
 	while(1){}
 }
 
-void IntToAscii(int n){
-  if(n >= 10){
-    IntToAscii(n/10);
-    n = n%10;
-  }
+void IntToAscii(int n)
+{
+	if(n >= 10)
+	{
+		IntToAscii(n/10);
+		n = n%10;
+	}
+
 	*fileDataPtr = n + '0';
-  fileDataPtr++;
+	fileDataPtr++;
 }

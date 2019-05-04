@@ -15,6 +15,7 @@
 
 #include "servo.h"
 #include "cam_cv.hpp"
+#include "monitoring.h"
 
 //#define DEBUG 1
 #include "debug.h"
@@ -33,7 +34,7 @@ typedef struct {
 	struct sched_param sched_param;
 }pthread_container_t;
 
-#define NUM_THREADS 2
+#define NUM_THREADS 3
 
 
 /* GLOBALS */
@@ -68,8 +69,8 @@ int main(void)
 	threads[1].function = servo_plan;
 	threads[1].sched_param.sched_priority = 94;
 
-	//threads[2].function = cam_circles;
-	//threads[2].sched_param.sched_priority = 95;
+	threads[2].function = monitor;
+	threads[2].sched_param.sched_priority = 90;
 
 	// Set up default attributes for all threads
 	for(uint_fast8_t i = 0; i < NUM_THREADS; i++)
