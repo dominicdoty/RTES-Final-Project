@@ -29,9 +29,9 @@
 
 // defining the region of interest (ROI). (0,0) is the top-left corner of the image
 #define START_X		(0)
-#define START_Y		(360)	// 360 pixels from the top
+#define START_Y		(320)	// 360 pixels from the top
 #define WIDTH_X		(640)	// take the whole width of the image
-#define HEIGHT_Y 	(120)	// take the bottom quarter of the image
+#define HEIGHT_Y 	(160)	// take the bottom quarter of the image
 
 /*  Function declarations  */
 
