@@ -16,7 +16,7 @@
 #include "servo.h"
 #include "cam_cv.hpp"
 
-#define DEBUG 1
+//#define DEBUG 1
 #include "debug.h"
 
 #include "data.h"
