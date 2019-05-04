@@ -11,7 +11,7 @@
 #define USEC_PER_MSEC	(1000)
 #define NSEC_PER_MSEC   (1000000)
 
-#define PERIOD (50)
+#define PERIOD (125)
 
 
 using namespace cv;
