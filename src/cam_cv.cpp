@@ -4,11 +4,12 @@
 #include "cam_cv.hpp"
 #include "debug.h"
 #include "data.h"
+#include <syslog.h>
 
+#define DEBUG 0
 
-#define DEBUG 1
-
-
+#define USEC_PER_MSEC	(1000)
+#define NSEC_PER_MSEC   (1000000)
 
 #define PERIOD (50)
 
@@ -39,9 +40,13 @@ void* cam_lines(void* args)
 
 	// set up the double buffer
 
+	int iterCnt = 0;
 
 	while(1)
 	{
+		//clock_gettime(CLOCK_MONOTONIC, &time);
+		//syslog(LOG_CRIT, "ITER %d: cam_lines cycle start @ sec=%d, msec=%d\n", iterCnt, (int)(time.tv_sec), (int)time.tv_nsec/NSEC_PER_MSEC);
+	
 		debug_print("@ start of cam bufferVal %d\n", buffer_Val);
 
 		if(buffer_Val == 0)
@@ -50,6 +55,11 @@ void* cam_lines(void* args)
 			pthread_mutex_lock(&mutex1);
 
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, NULL);
+
+		clock_gettime(CLOCK_MONOTONIC, &time);
+		syslog(LOG_CRIT, "ITER %d: cam_lines cycle start @ sec=%d, msec=%d\n", iterCnt, (int)time.tv_sec, (int)time.tv_nsec/NSEC_PER_MSEC);
+		
+
 
 		debug_print_time();
 		debug_print(" - cam_lines start\n");
@@ -78,6 +88,11 @@ void* cam_lines(void* args)
 
 		image_roi.copyTo(cropped_HSV);
 
+		Mat dilation_dst;
+		Mat element = Mat();
+//		dilate(cropped_HSV, dilation_dst, element);
+//		GaussianBlur(dilation_dst, canny_frame, Size(7,7), 1.5, 1.5);
+	
 		GaussianBlur(cropped_HSV, canny_frame, Size(7,7), 1.5, 1.5);
 		Canny(canny_frame, canny_frame, CANNY_LOW_THRESH, CANNY_HIGH_THRESH, 3);
 		HoughLinesP(canny_frame, lines, 1, CV_PI/180, 50, 50, 10);	
@@ -91,7 +106,8 @@ void* cam_lines(void* args)
 			debug_print("Line[%d], Point 1. x=%d y=%d\n", i, l[0], l[1]);
 			debug_print("Line[%d]: Point 2. x=%d y=%d\n", i, l[2], l[3]);
 		}
-	
+		
+//		imwrite("dilated.jpg", dilation_dst);
 //		imwrite("thresh_HSV.jpg", threshold_HSV);
 //		imwrite("lines.jpg", canny_frame);
 //		imwrite("cropped_HSV.jpg", cropped_HSV);	
@@ -138,7 +154,11 @@ void* cam_lines(void* args)
 		time.tv_nsec = (time.tv_nsec + (PERIOD * NSEC_PER_MSEC)) % NSEC_PER_SEC;
 
 		debug_print_time();
-		debug_print(" - cam_lines end\n");
+		debug_print(" - cam_lines end of while(1)\n");
+
+		clock_gettime(CLOCK_MONOTONIC, &time);
+		syslog(LOG_CRIT, "ITER %d: cam_lines cycle end @ sec=%d, msec=%d\n", iterCnt, (int)time.tv_sec, (int)time.tv_nsec/NSEC_PER_MSEC); 
+		iterCnt++;
 	}
 	return 0;
 }
