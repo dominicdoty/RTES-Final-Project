@@ -16,7 +16,7 @@
 #define NSEC_PER_SEC	(1000000000)
 #define NSEC_PER_USEC	(100)
 
-#define PERIOD				50		// period in ms
+#define PERIOD				125		// period in ms
 #define IMAGE_WIDTH			960		// image width in pixels
 #define IMAGE_CENTER_X		(IMAGE_WIDTH/2)
 
