@@ -9,7 +9,7 @@ CXX=g++
 CDEFS=
 CFLAGS= -O0 -g -Wall $(CDEFS)
 LIB_DIRS = -L /usr/local/lib
-LIBS= -lrt -pthread
+LIBS= -lrt -pthread -lpigpio
 CPPLIBS= -lopencv_core -lopencv_flann -lopencv_video -lopencv_highgui -lopencv_imgproc
 
 C_SRC_FILES = $(wildcard $(SRC_DIR)/*.c)

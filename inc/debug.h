@@ -10,8 +10,13 @@
 // This makes it so you can't break debug prints while they're turned off
 #define debug_print(...) do{ if(DEBUG){printf(__VA_ARGS__);}}while(0)
 
-#define NSEC_PER_MSEC 	(1000000)
-#define NSEC_PER_SEC	(1000000000)
+#ifndef NSEC_PER_MSEC
+	#define NSEC_PER_MSEC 	(1000000)
+#endif
+
+#ifndef NSEC_PER_SEC
+	#define NSEC_PER_SEC	(1000000000)
+#endif
 
 inline void debug_print_time(void)
 {

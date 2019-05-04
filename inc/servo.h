@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <signal.h>
 #include <unistd.h>
-
+#include <pigpio.h>
 
 /* DEFINES AND TYPEDEFS */
 
