@@ -3,7 +3,7 @@
 
 // If you want the program to print out debugging info
 // put this define in your code before this header is included
-#define DEBUG  1
+#define DEBUG  0
 #include <stdio.h>
 #include <time.h>
 // This is gross, but it makes it so the compiler always checks the syntax even when not defined
