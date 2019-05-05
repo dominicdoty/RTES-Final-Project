@@ -77,8 +77,9 @@ void* servo_plan(void* args)
 
 	while(1)
 	{
-		//clock_gettime(CLOCK_MONOTONIC, &time);
-		//syslog(LOG_CRIT, "ITER %d: servo start time @ sec=%d, msec=%d\n", iterCnt, (int)time.tv_sec, (int)time.tv_nsec/NSEC_PER_MSEC); 
+		struct timespec log_time;
+		clock_gettime(CLOCK_MONOTONIC, &log_time);
+		syslog(LOG_CRIT, "ITER %d: servo start time @ sec=%d, msec=%d\n", iterCnt, (int)log_time.tv_sec, (int)log_time.tv_nsec/NSEC_PER_MSEC); 
 
 		debug_print("@ start of servo bufferVal %d\n", buffer_Val);
 
@@ -200,8 +201,8 @@ void* servo_plan(void* args)
 			buffer_Val = 0;
 		}
 
-		clock_gettime(CLOCK_MONOTONIC, &time);
-		syslog(LOG_CRIT, "ITER %d: servo end time @ sec=%d, usec=%d\n", iterCnt, (int)time.tv_sec, (int)time.tv_nsec/NSEC_PER_USEC);
+		clock_gettime(CLOCK_MONOTONIC, &log_time);
+		syslog(LOG_CRIT, "ITER %d: servo end time @ sec=%d, usec=%d\n", iterCnt, (int)log_time.tv_sec, (int)log_time.tv_nsec/NSEC_PER_USEC);
 		iterCnt++;
 	}
 }
