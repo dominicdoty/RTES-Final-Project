@@ -42,6 +42,7 @@ void* cam_lines(void* args)
 
 	int iterCnt = 0;
 
+
 	while(1)
 	{
 		//clock_gettime(CLOCK_MONOTONIC, &time);
@@ -56,8 +57,9 @@ void* cam_lines(void* args)
 
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, NULL);
 
-		clock_gettime(CLOCK_MONOTONIC, &time);
-		syslog(LOG_CRIT, "ITER %d: cam_lines cycle start @ sec=%d, msec=%d\n", iterCnt, (int)time.tv_sec, (int)time.tv_nsec/NSEC_PER_MSEC);
+		struct timespec log_time;
+		clock_gettime(CLOCK_MONOTONIC, &log_time);
+		syslog(LOG_CRIT, "ITER %d: cam_lines cycle start @ sec=%d, msec=%d\n", iterCnt, (int)log_time.tv_sec, (int)log_time.tv_nsec/NSEC_PER_MSEC);
 		
 
 
@@ -156,8 +158,8 @@ void* cam_lines(void* args)
 		debug_print_time();
 		debug_print(" - cam_lines end of while(1)\n");
 
-		clock_gettime(CLOCK_MONOTONIC, &time);
-		syslog(LOG_CRIT, "ITER %d: cam_lines cycle end @ sec=%d, msec=%d\n", iterCnt, (int)time.tv_sec, (int)time.tv_nsec/NSEC_PER_MSEC); 
+		clock_gettime(CLOCK_MONOTONIC, &log_time);
+		syslog(LOG_CRIT, "ITER %d: cam_lines cycle end @ sec=%d, msec=%d\n", iterCnt, (int)log_time.tv_sec, (int)log_time.tv_nsec/NSEC_PER_MSEC); 
 		iterCnt++;
 	}
 	return 0;
